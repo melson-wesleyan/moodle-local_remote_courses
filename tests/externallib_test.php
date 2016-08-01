@@ -34,6 +34,10 @@ class local_remote_courses_testcase extends externallib_advanced_testcase {
         $this->resetAfterTest(true);
         $contextid = context_system::instance()->id;
 
+        // We need logging enabled.
+        set_config('enabled_stores', 'logstore_standard', 'tool_log');
+        set_config('buffersize', 0, 'logstore_standard');
+
         $role = new stdClass();
         $role->name = 'Web service user';
         $r1 = $this->getDataGenerator()->create_role($role);
@@ -46,6 +50,7 @@ class local_remote_courses_testcase extends externallib_advanced_testcase {
         $this->setUser($user);
         set_config('extracttermcode', '/[0-9]+.([0-9]+)/', 'local_remote_courses');
 
+        // Create classes.
         $course1 = new stdClass();
         $course1->fullname  = 'Test Course 1';
         $course1->shortname = 'CF101';
@@ -76,5 +81,18 @@ class local_remote_courses_testcase extends externallib_advanced_testcase {
         $this->assertEquals(2, count($results));
         $this->assertEquals('201620', $results[0]['term']);
         $this->assertEquals('201610', $results[1]['term']);
+
+        // Test sorting; user will "visit" course 1.
+        $context = context_course::instance($c1->id);
+        $eventparams = array();
+        $eventparams['context'] = $context;
+        $eventparams['userid'] = $student->id;
+        $event = \core\event\course_viewed::create($eventparams);
+        $event->trigger();
+
+        $results = local_remote_courses_external::get_courses_by_username($student->username);
+        $this->assertEquals(2, count($results));
+        $this->assertEquals('Test Course 1', $results[0]['fullname']);
+        $this->assertEquals('Test Course 2', $results[1]['fullname']);
     }
 }
