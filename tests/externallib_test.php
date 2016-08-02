@@ -32,6 +32,7 @@ class local_remote_courses_testcase extends externallib_advanced_testcase {
         global $DB;
 
         $this->resetAfterTest(true);
+        $this->preventResetByRollback();
         $contextid = context_system::instance()->id;
 
         // We need logging enabled.
